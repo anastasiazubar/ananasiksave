@@ -1,0 +1,28 @@
+ARG ARTIFACTORY_USERNAME
+ARG ARTIFACTORY_API_KEY
+
+WORKDIR /apps
+
+ENV PIP_CONFIG_FILE=pip.conf
+
+COPY pip.conf .
+COPY src/requirements.txt .
+
+RUN source /env && \
+    if [ -z "$ARTIFACTORY_USERNAME" ] || [ -z "$ARTIFACTORY_API_KEY" ]; then \
+        echo "ARTIFACTORY_USERNAME and ARTIFACTORY_API_KEY must be set" && exit 1; \
+    fi && \
+    sed -i "s/|USERNAME|/$ARTIFACTORY_USERNAME/" pip.conf && \
+    sed -i "s/|PASSWORD|/$ARTIFACTORY_API_KEY/" pip.conf && \
+    cat pip.conf
+
+RUN pip install --upgrade pip
+RUN pip install -vvv --no-cache-dir -r requirements.txt
+RUN rm pip.conf
+
+USER root
+
+COPY src/ .
+
+RUN chmod -R g+rwx .
+
